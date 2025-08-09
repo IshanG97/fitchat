@@ -126,23 +126,35 @@ export async function generate_llm_response(senderId: string): Promise<{ reply: 
     // Get recent conversation history
     const recentMessages = await DatabaseService.getRecentMessages(user.id, 10);
     
-    // Create sports coach instance
-    const coach = createSportsCoach(senderId);
-    
-    // Build context from recent messages
-    const context = {
-      recentMessages: recentMessages.map(msg => msg.message),
-      biometrics: {
-        heartRate: 75,
-        steps: 8000,
-        sleepHours: 7,
-        recoveryScore: 7,
-        fatigueLevel: 4,
+    // Build conversation history for OpenAI
+    const messages = [
+      {
+        role: 'system' as const,
+        content: `You are FitChat, an AI fitness coach. You help users with workouts, nutrition, recovery, and achieving their fitness goals. Be encouraging, personalized, and knowledgeable about fitness.
+        
+User profile: ${user.name}, personality: ${user.personality || 'balanced'}
+Keep responses conversational and under 100 words.`
       }
-    };
-    
+    ];
+
+    // Add conversation history
+    recentMessages.forEach(msg => {
+      messages.push({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.message
+      });
+    });
+
+    // Generate response using OpenAI
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: messages,
+      max_tokens: 150,
+      temperature: 0.7,
+    });
+
+    const response = completion.choices[0]?.message?.content || "I'm here to help with your fitness journey!";
     const latestMessage = recentMessages[recentMessages.length - 1]?.message || 'Hello';
-    const response = await coach.processConversation(latestMessage, context);
     
     // Determine topic based on conversation content
     let topic = 'General';

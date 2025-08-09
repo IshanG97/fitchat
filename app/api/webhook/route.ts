@@ -41,6 +41,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'ignored (no message data)' });
     }
 
+    // Check for duplicate messages
+    if (message_data.message_id) {
+      const isDuplicate = await DatabaseService.messageExists(message_data.message_id);
+      if (isDuplicate) {
+        console.log(`📦 Duplicate message ignored: ${message_data.message_id}`);
+        return NextResponse.json({ status: 'ignored (duplicate message)' });
+      }
+    }
+
     let user_text = '';
 
     if (message_data.audio_id) {
@@ -64,15 +73,24 @@ export async function POST(req: NextRequest) {
       let conversation = await DatabaseService.findOrCreateConversation(user.id, 'General');
 
       // Log user message temporarily
-      const tempMessage = await DatabaseService.logMessage(
-        user.id,
-        conversation.id,
-        'user',
-        user_text,
-        message_data.audio_id ? 'audio' : 'text',
-        message_data.audio_id,
-        message_data.message_id
-      );
+      let tempMessage;
+      try {
+        tempMessage = await DatabaseService.logMessage(
+          user.id,
+          conversation.id,
+          'user',
+          user_text,
+          message_data.audio_id ? 'audio' : 'text',
+          message_data.audio_id,
+          message_data.message_id
+        );
+      } catch (error: any) {
+        if (error.message?.includes('unique_message_id') || error.code === '23505') {
+          console.log(`📦 Duplicate message caught by constraint: ${message_data.message_id}`);
+          return NextResponse.json({ status: 'ignored (duplicate message)' });
+        }
+        throw error;
+      }
 
       console.log('📥 Logged user message to database');
 
@@ -109,13 +127,18 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // Generate unique message ID for assistant response
+      const assistantMessageId = `assistant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
       // Log assistant response
       await DatabaseService.logMessage(
         user.id,
         finalConversationId,
         'assistant',
         llmResponse.reply,
-        'text'
+        'text',
+        undefined,
+        assistantMessageId
       );
 
       console.log('🧠 Logged assistant response to database');

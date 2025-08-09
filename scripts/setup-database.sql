@@ -52,8 +52,12 @@ CREATE INDEX IF NOT EXISTS idx_conversations_topic ON conversations(topic);
 CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_messages_message_id ON messages(message_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_active ON tasks(active);
+
+-- Add unique constraint on message_id to prevent duplicates
+ALTER TABLE messages ADD CONSTRAINT unique_message_id UNIQUE (message_id);
 
 -- Enable Row Level Security (RLS) for better security
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

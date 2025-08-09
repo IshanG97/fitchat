@@ -61,6 +61,22 @@ export class DatabaseService {
     return data;
   }
 
+  static async getMessageByMessageId(messageId: string): Promise<Message | null> {
+    const { data, error } = await supabaseAdmin
+      .from('messages')
+      .select('*')
+      .eq('message_id', messageId)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  }
+
+  static async messageExists(messageId: string): Promise<boolean> {
+    const message = await this.getMessageByMessageId(messageId);
+    return message !== null;
+  }
+
   // Conversation operations
   static async createConversation(userId: number, topic: string, status: 'open' | 'closed' = 'open'): Promise<Conversation> {
     const { data, error } = await supabaseAdmin
