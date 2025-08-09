@@ -49,6 +49,18 @@ export class DatabaseService {
     return data;
   }
 
+  static async updateLastSeen(userId: number): Promise<User> {
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .update({ last_seen: new Date().toISOString() })
+      .eq('id', userId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
   // Conversation operations
   static async createConversation(userId: number, topic: string, status: 'open' | 'closed' = 'open'): Promise<Conversation> {
     const { data, error } = await supabaseAdmin
