@@ -126,34 +126,39 @@ export async function generate_llm_response(senderId: string): Promise<{ reply: 
     // Get recent conversation history
     const recentMessages = await DatabaseService.getRecentMessages(user.id, 10);
     
-    // Build conversation history for OpenAI
-    const messages = [
-      {
-        role: 'system' as const,
-        content: `You are FitChat, an AI fitness coach. You help users with workouts, nutrition, recovery, and achieving their fitness goals. Be encouraging, personalized, and knowledgeable about fitness.
-        
+    // Build conversation input for Responses API
+    let conversationInput = `You are FitChat, an AI fitness coach. You help users with workouts, nutrition, recovery, and achieving their fitness goals. Be encouraging, personalized, and knowledgeable about fitness.
+
 User profile: ${user.name}, personality: ${user.personality || 'balanced'}
-Keep responses conversational and under 100 words.`
-      }
-    ];
+Keep responses conversational and under 100 words.
+
+`;
 
     // Add conversation history
-    recentMessages.forEach(msg => {
-      messages.push({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.message
+    if (recentMessages.length > 0) {
+      conversationInput += "Conversation history:\n";
+      recentMessages.forEach(msg => {
+        const role = msg.role === 'user' ? 'User' : 'Assistant';
+        conversationInput += `${role}: ${msg.message}\n`;
       });
+      conversationInput += "\nRespond to the user's latest message:";
+    }
+
+    // Generate response using OpenAI Responses API
+    const completion = await openai.responses.create({
+      model: 'gpt-5-mini',
+      input: conversationInput,
+      text: {
+        verbosity: "medium"
+      },
+      reasoning: {
+        effort: "minimal"
+      },
+      store: true
     });
 
-    // Generate response using OpenAI
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: messages,
-      max_tokens: 150,
-      temperature: 0.7,
-    });
-
-    const response = completion.choices[0]?.message?.content || "I'm here to help with your fitness journey!";
+    // Extract response content from GPT-5 Responses API
+    const response = completion.output_text || "I'm here to help with your fitness journey!";
     const latestMessage = recentMessages[recentMessages.length - 1]?.message || 'Hello';
     
     // Determine topic based on conversation content
@@ -211,6 +216,12 @@ export async function send_text_message(toNumber: string, message: string): Prom
   try {
     const url = `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/messages`;
     
+    // Debug: uncomment next lines if token issues occur
+    // const tokenPreview = WHATSAPP_TOKEN ? 
+    //   `${WHATSAPP_TOKEN.substring(0, 10)}...${WHATSAPP_TOKEN.substring(WHATSAPP_TOKEN.length - 10)}` : 'undefined';
+    // console.log('🔑 Token preview:', tokenPreview);
+    // console.log('📞 Phone number ID:', PHONE_NUMBER_ID);
+    
     const payload = {
       messaging_product: 'whatsapp',
       to: toNumber,
@@ -260,7 +271,7 @@ export async function generate_voice_with_elevenlabs(text: string): Promise<stri
 
 export async function upload_audio_to_whatsapp(audioPath: string): Promise<string> {
   try {
-    const url = `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/media`;
+    const url = `https://graph.facebook.com/v22.0/${PHONE_NUMBER_ID}/media`;
     
     const form = new FormData();
     form.append('file', fs.createReadStream(audioPath));
