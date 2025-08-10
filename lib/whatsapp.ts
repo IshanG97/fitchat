@@ -7,6 +7,8 @@ import { DatabaseService } from './database';
 import { createSportsCoach } from './sports-coach';
 import OpenAI from 'openai';
 
+import prompts from '../config/prompts.json';
+
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN!;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID!;
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -16,6 +18,7 @@ export interface MessageData {
   sender_name: string;
   text?: string;
   audio_id?: string;
+  video_id?: string;
   message_id?: string;
   timestamp?: string;
   type?: string;
@@ -40,6 +43,7 @@ export function extract_message_data(body: any): MessageData | null {
       type: messageType,
       text: messageType === 'text' ? message.text?.body : undefined,
       audio_id: messageType === 'audio' ? message.audio?.id : undefined,
+      video_id: messageType === 'video' ? message.video?.id : undefined,
       raw: message,
     };
   } catch (error) {
@@ -93,6 +97,156 @@ export async function download_whatsapp_audio(audioId: string): Promise<string> 
   }
 }
 
+export async function download_whatsapp_video(videoId: string): Promise<string> {
+  try {
+    // Get media URL
+    const mediaResponse = await axios.get(
+      `https://graph.facebook.com/v22.0/${videoId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+        },
+      }
+    );
+
+    const mediaUrl = mediaResponse.data.url;
+
+    // Download the video file
+    const videoResponse = await axios.get(mediaUrl, {
+      headers: {
+        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+      },
+      responseType: 'stream',
+    });
+
+    // Save to temporary file
+    const tempDir = '/tmp';
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const filePath = `${tempDir}/video_${Date.now()}.mp4`;
+    const writer = fs.createWriteStream(filePath);
+    videoResponse.data.pipe(writer);
+
+    return new Promise((resolve, reject) => {
+      writer.on('finish', () => resolve(filePath));
+      writer.on('error', reject);
+    });
+  } catch (error) {
+    console.error('Error downloading WhatsApp video:', error);
+    throw error;
+  }
+}
+
+export async function extract_video_frames(videoPath: string, frameCount: number = 5): Promise<string[]> {
+  try {
+    const frameDir = `/tmp/frames_${Date.now()}`;
+    if (!fs.existsSync(frameDir)) {
+      fs.mkdirSync(frameDir, { recursive: true });
+    }
+
+    // Check if ffmpeg is available
+    const { spawn } = require('child_process');
+    
+    return new Promise((resolve, reject) => {
+      // First check if ffmpeg exists
+      const checkFFmpeg = spawn('ffmpeg', ['-version']);
+      
+      checkFFmpeg.on('error', (error: any) => {
+        if (error.code === 'ENOENT') {
+          console.warn('⚠️ FFmpeg not found. Please install FFmpeg to enable video frame extraction.');
+          console.warn('📋 Install instructions:');
+          console.warn('   Windows: choco install ffmpeg');
+          console.warn('   macOS: brew install ffmpeg');
+          console.warn('   Ubuntu: sudo apt install ffmpeg');
+          reject(new Error('FFmpeg not installed. Video analysis requires FFmpeg to extract frames.'));
+        } else {
+          reject(error);
+        }
+      });
+
+      checkFFmpeg.on('close', (code: any) => {
+        if (code === 0 || code === 1) { // FFmpeg exists (returns 1 for version check)
+          // FFmpeg is available, proceed with frame extraction
+          const ffmpeg = spawn('ffmpeg', [
+            '-i', videoPath,
+            '-vf', `select='not(mod(n\\,${Math.floor(30 / frameCount)}))',scale=640:480`,
+            '-vsync', 'vfr',
+            '-q:v', '2',
+            `${frameDir}/frame_%03d.jpg`
+          ]);
+
+          ffmpeg.stderr.on('data', (data: any) => {
+            console.log('FFmpeg:', data.toString());
+          });
+
+          ffmpeg.on('close', (code: any) => {
+            if (code === 0) {
+              const frameFiles = fs.readdirSync(frameDir)
+                .filter(file => file.endsWith('.jpg'))
+                .map(file => `${frameDir}/${file}`)
+                .sort();
+              
+              resolve(frameFiles.slice(0, frameCount));
+            } else {
+              reject(new Error(`FFmpeg process exited with code ${code}`));
+            }
+          });
+
+          ffmpeg.on('error', (error: any) => {
+            reject(error);
+          });
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Error extracting video frames:', error);
+    throw error;
+  }
+}
+
+export async function analyze_workout_form(framePaths: string[]): Promise<string> {
+  try {
+    // Convert frames to base64 for GPT-4o Vision
+    const frameImages = framePaths.map(framePath => {
+      const imageBuffer = fs.readFileSync(framePath);
+      const base64Image = imageBuffer.toString('base64');
+      return {
+        type: "image_url" as const,
+        image_url: {
+          url: `data:image/jpeg;base64,${base64Image}`,
+          detail: "high" as const
+        }
+      };
+    });
+
+    // Analyze frames with GPT-4o Vision
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: prompts.video_form_analysis.replace('{frame_count}', framePaths.length.toString())
+            },
+            ...frameImages
+          ]
+        }
+      ],
+      max_tokens: 500,
+      temperature: 0.3
+    });
+
+    return completion.choices[0]?.message?.content || "Unable to analyze workout form. Please ensure the video shows clear exercise movements.";
+  } catch (error) {
+    console.error('Error analyzing workout form:', error);
+    throw error;
+  }
+}
+
 export async function transcribe_audio(audioPath: string): Promise<string> {
   try {
     const transcription = await openai.audio.transcriptions.create({
@@ -115,6 +269,40 @@ export async function transcribe_audio(audioPath: string): Promise<string> {
   }
 }
 
+export async function generate_video_followup_response(senderId: string, analysisResult: string): Promise<{ reply: string; topic: string }> {
+  try {
+    // Get user from database
+    const user = await DatabaseService.getUserByPhone(senderId);
+    if (!user) {
+      throw new Error(`User not found: ${senderId}`);
+    }
+
+    // Build followup prompt
+    const followupPrompt = prompts.video_analysis_followup
+      .replace('{analysis_result}', analysisResult);
+
+    // Generate response using GPT-5-mini
+    const completion = await openai.responses.create({
+      model: 'gpt-5-mini',
+      input: followupPrompt,
+      reasoning: {
+        effort: "low" as const
+      },
+      store: true
+    });
+
+    const response = completion.output_text || "Great job sharing your workout video! Keep focusing on your form and you'll see amazing progress.";
+    
+    return { reply: response, topic: 'Workout' };
+  } catch (error) {
+    console.error('Error generating video followup:', error);
+    return { 
+      reply: "Thanks for sharing your workout video! Keep up the great work on improving your form.", 
+      topic: 'Workout' 
+    };
+  }
+}
+
 export async function generate_llm_response(senderId: string): Promise<{ reply: string; topic?: string; tool_call?: any }> {
   try {
     // Get user from database
@@ -126,13 +314,12 @@ export async function generate_llm_response(senderId: string): Promise<{ reply: 
     // Get recent conversation history
     const recentMessages = await DatabaseService.getRecentMessages(user.id, 10);
     
-    // Build conversation input for Responses API
-    let conversationInput = `You are FitChat, an AI fitness coach. You help users with workouts, nutrition, recovery, and achieving their fitness goals. Be encouraging, personalized, and knowledgeable about fitness.
+    // Build conversation input using prompts
+    const systemPrompt = prompts.fitness_coach_system
+      .replace('{user_name}', user.name)
+      .replace('{user_personality}', user.personality || 'balanced');
 
-User profile: ${user.name}, personality: ${user.personality || 'balanced'}
-Keep responses conversational and under 100 words.
-
-`;
+    let conversationInput = systemPrompt + '\n\n';
 
     // Add conversation history
     if (recentMessages.length > 0) {
@@ -148,11 +335,8 @@ Keep responses conversational and under 100 words.
     const completion = await openai.responses.create({
       model: 'gpt-5-mini',
       input: conversationInput,
-      text: {
-        verbosity: "medium"
-      },
       reasoning: {
-        effort: "minimal"
+        effort: "low" as const
       },
       store: true
     });

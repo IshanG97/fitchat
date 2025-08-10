@@ -1,0 +1,24 @@
+{
+  "message_history": {
+    "max_context_messages": 20,
+    "summary_threshold": 100,
+    "max_days_full_history": 7,
+    "summary_chunk_size": 50
+  },
+  "reminders": {
+    "max_active_per_user": 10,
+    "default_snooze_minutes": 15,
+    "max_frequency_per_day": 5
+  },
+  "ai_context": {
+    "include_recent_workouts": 5,
+    "include_recent_meals": 10,
+    "include_weight_history_days": 30,
+    "context_window_days": 14
+  },
+  "performance": {
+    "message_cleanup_after_days": 90,
+    "summary_cleanup_after_days": 365,
+    "batch_size_for_summaries": 25
+  }
+}

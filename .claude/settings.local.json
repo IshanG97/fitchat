@@ -4,7 +4,9 @@
       "Bash(npm run dev:*)",
       "Bash(npm install)",
       "Bash(taskkill:*)",
-      "Bash(npx kill-port:*)"
+      "Bash(npx kill-port:*)",
+      "Bash(node:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

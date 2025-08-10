@@ -1,0 +1,343 @@
+{
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "record_workout",
+        "description": "Record workout details including exercises, sets, reps, weight, and body weight attribution",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "workout_name": {
+              "type": "string",
+              "description": "Name of the workout (e.g., 'Morning Push Session', 'Leg Day')"
+            },
+            "workout_type": {
+              "type": "string",
+              "enum": ["strength", "cardio", "flexibility", "sports", "other"],
+              "description": "Type of workout performed"
+            },
+            "duration_minutes": {
+              "type": "integer",
+              "description": "Total workout duration in minutes"
+            },
+            "exercises": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "exercise_name": {
+                    "type": "string",
+                    "description": "Name of the exercise (e.g., 'Push-ups', 'Bench Press')"
+                  },
+                  "exercise_type": {
+                    "type": "string",
+                    "enum": ["strength", "cardio", "flexibility", "isometric"]
+                  },
+                  "sets": {"type": "integer"},
+                  "reps": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "Array of reps per set (e.g., [12, 10, 8])"
+                  },
+                  "weight": {
+                    "type": "number",
+                    "description": "Weight used in kg or lbs"
+                  },
+                  "uses_body_weight": {
+                    "type": "boolean",
+                    "description": "True if exercise uses body weight (pull-ups, push-ups, etc.)"
+                  },
+                  "distance": {
+                    "type": "number",
+                    "description": "Distance for cardio exercises in km or miles"
+                  },
+                  "duration_seconds": {
+                    "type": "integer",
+                    "description": "Duration for time-based exercises"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Additional notes about the exercise"
+                  }
+                },
+                "required": ["exercise_name", "exercise_type"]
+              }
+            },
+            "notes": {
+              "type": "string", 
+              "description": "General workout notes"
+            }
+          },
+          "required": ["exercises"]
+        }
+      }
+    },
+    {
+      "type": "function", 
+      "function": {
+        "name": "record_meal",
+        "description": "Record meal details with AI-estimated calories and macros",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "meal_type": {
+              "type": "string",
+              "enum": ["breakfast", "lunch", "dinner", "snack", "other"],
+              "description": "Type of meal"
+            },
+            "meal_description": {
+              "type": "string",
+              "description": "Detailed description of the meal"
+            },
+            "estimated_calories": {
+              "type": "number",
+              "description": "Estimated total calories"
+            },
+            "confidence_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Confidence in calorie estimation (0-1)"
+            },
+            "protein_grams": {"type": "number"},
+            "carbs_grams": {"type": "number"},
+            "fat_grams": {"type": "number"},
+            "fiber_grams": {"type": "number"}
+          },
+          "required": ["meal_description", "estimated_calories"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "update_user_metrics", 
+        "description": "Record any health/fitness metrics mentioned by the user. Be intelligent about detecting metrics like weight, height, body fat, blood pressure, heart rate, steps, sleep hours, BMI, etc.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "metrics": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "metric_type": {
+                    "type": "string",
+                    "description": "Type of health metric (e.g., 'body_weight', 'height', 'body_fat_percentage', 'blood_pressure', 'vo2_max', 'steps', 'sleep_hours', etc.)"
+                  },
+                  "value": {"type": "number"},
+                  "unit": {"type": "string"},
+                  "source": {
+                    "type": "string",
+                    "enum": ["manual", "apple_health", "user_prompt"],
+                    "default": "user_prompt"
+                  }
+                },
+                "required": ["metric_type", "value", "unit"]
+              }
+            }
+          },
+          "required": ["metrics"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "create_reminders",
+        "description": "Create multiple fitness reminders with complex scheduling. Be intelligent about parsing user requests like 'Monday, Wednesday, Friday' or 'every other day' into proper schedule format.",
+        "parameters": {
+          "type": "object", 
+          "properties": {
+            "reminders": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Reminder title"
+                  },
+                  "reminder_type": {
+                    "type": "string",
+                    "enum": ["workout", "weigh_in", "meal", "custom", "goal_check"]
+                  },
+                  "frequency": {
+                    "type": "string",
+                    "enum": ["once", "daily", "weekly", "monthly", "custom"]
+                  },
+                  "frequency_details": {
+                    "type": "object",
+                    "properties": {
+                      "time": {
+                        "type": "string",
+                        "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
+                        "description": "Time in HH:MM format"
+                      },
+                      "timezone": {
+                        "type": "string",
+                        "description": "Timezone (e.g., 'America/New_York')"
+                      },
+                      "days": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+                        }
+                      },
+                      "day_of_month": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 31
+                      },
+                      "interval_days": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    }
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Custom reminder message"
+                  }
+                },
+                "required": ["title", "reminder_type", "frequency", "frequency_details"]
+              }
+            }
+          },
+          "required": ["reminders"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weight_history",
+        "description": "Retrieve user's weight tracking history from database",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "days": {
+              "type": "integer",
+              "description": "Number of days to look back (default 30)",
+              "default": 30
+            },
+            "limit": {
+              "type": "integer", 
+              "description": "Maximum number of records to return (default 50)",
+              "default": 50
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_workout_history",
+        "description": "Retrieve user's workout history from database with detailed exercise information",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "days": {
+              "type": "integer",
+              "description": "Number of days to look back (default 30)",
+              "default": 30
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of workouts to return (default 20)",
+              "default": 20
+            },
+            "workout_type": {
+              "type": "string",
+              "enum": ["strength", "cardio", "flexibility", "sports", "other"],
+              "description": "Filter by workout type (optional)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function", 
+      "function": {
+        "name": "get_nutrition_history",
+        "description": "Retrieve user's meal and nutrition history from database",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "days": {
+              "type": "integer",
+              "description": "Number of days to look back (default 7)",
+              "default": 7
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of meals to return (default 30)",
+              "default": 30
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_metrics_history", 
+        "description": "Retrieve user's health metrics history (any metric type)",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "metric_type": {
+              "type": "string",
+              "description": "Type of metric to retrieve (e.g., 'body_weight', 'body_fat_percentage', 'resting_heart_rate')"
+            },
+            "days": {
+              "type": "integer", 
+              "description": "Number of days to look back (default 30)",
+              "default": 30
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of records to return (default 50)", 
+              "default": 50
+            }
+          },
+          "required": ["metric_type"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_user_reminders",
+        "description": "Retrieve user's current active reminders to show their schedule",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "reminder_type": {
+              "type": "string",
+              "enum": ["workout", "weigh_in", "meal", "custom", "goal_check"],
+              "description": "Filter by reminder type (optional)"
+            },
+            "active_only": {
+              "type": "boolean",
+              "default": true,
+              "description": "Only show active reminders"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "system_prompts": {
+    "fitness_coach": "You are FitChat, a confident AI fitness coach and the user's primary fitness advisor. You provide actionable advice, create workout plans, give nutrition guidance, and track progress. You are their go-to fitness expert.\n\nYOUR ROLE: You ARE the fitness professional. Provide specific, actionable advice rather than referring users elsewhere. Give concrete recommendations, create workout routines, suggest meal ideas, and coach them directly.\n\nKey capabilities:\n- Create personalized workout plans and routines\n- Provide specific nutrition advice and meal suggestions\n- Analyze workout videos for detailed form feedback\n- Track ANY health/fitness metrics users mention\n- Give progressive overload recommendations\n- Suggest exercise modifications and progressions\n- Create intelligent reminders for consistency\n\nMETRIC DETECTION: ALWAYS use the update_user_metrics tool when users mention ANY health metrics:\n- \"I weigh 82kg\" → update_user_metrics with body_weight: 82, unit: \"kg\"\n- \"I am 171cm tall\" → update_user_metrics with height: 171, unit: \"cm\"\n- \"My body fat is 15%\" → update_user_metrics with body_fat_percentage: 15, unit: \"%\"\n- \"My resting heart rate is 65\" → update_user_metrics with resting_heart_rate: 65, unit: \"bpm\"\n\nBe VERY aggressive about detecting metrics in natural speech:\n- Physical: weight, height, body fat %, muscle mass, BMI, waist circumference\n- Vital signs: heart rate, blood pressure, resting HR, max HR  \n- Performance: VO2 max, 1RM, running pace, cycling power\n- Activity: steps, calories burned, sleep hours, active minutes\n- Progress: measurements (chest, arms, legs, etc.)\n\nUse standard naming conventions like 'body_weight', 'height', 'resting_heart_rate', 'vo2_max', 'sleep_hours', etc.\n\nNEVER ignore metrics mentioned by users - always record them!\n\nCOACHING STYLE:\n- Be confident and direct with advice\n- Give specific recommendations (sets, reps, weights, foods, portions)\n- Create actionable plans rather than generic suggestions\n- Encourage progressive improvement\n- Only mention consulting professionals for serious medical concerns or injuries\n- You ARE their fitness coach - act like it!\n\nCRITICAL INSTRUCTION: You MUST ALWAYS provide a detailed coaching response in your message content, even when using tools.\n\nYou are a FITNESS COACH FIRST, data recorder second. When users ask questions:\n1. ALWAYS provide detailed coaching advice and answer their specific questions FIRST\n2. Use tools to record metrics/data mentioned, but this happens in background\n3. Never give generic responses like \"I understand! Let me help you with that\"\n4. Give comprehensive, specific fitness advice even when recording data\n5. NEVER leave your message content empty - always provide coaching advice\n\nIMPORTANT: Even if you're calling tools to record data, you MUST still provide a detailed coaching response about the user's question. Tool calls are background operations - your main response should be comprehensive fitness coaching.\n\nExample: User says \"I weigh 82kg and want to lose 10kg in 2 months, is this possible?\"\n- Your message content should be: \"A 10kg loss in 2 months is aggressive but achievable with the right approach. At 82kg, this represents about 12% body weight loss, requiring a caloric deficit of roughly 1,200 calories per day. Here's my recommendation: [detailed workout plan, nutrition strategy, timeline breakdown, etc.]\"\n- Tools will record the weight automatically in background\n- Focus your main response on comprehensive coaching advice\n\nBe supportive, motivating, knowledgeable, and focused on getting them results. You're their fitness coach, not a referral service.\n\nVIDEO ANALYSIS HANDLING: If a user asks questions about their form or technique shortly after sending a video (like \"what do you think about my form?\"), acknowledge that you're still analyzing their video and ask them to wait for the detailed analysis. Don't give generic form advice when you have a specific video to analyze.\n\nREMINDER SCHEDULING: Be smart about reminder creation:\n- If user says \"set reminders\" without specific times, ASK for their preferred times first\n- \"What times would work best for your workouts?\"\n- \"When would you prefer to be reminded about meal planning?\"\n- If user says \"set reminders\" and explicitly says to use default times or provides times, then create reminders\n- If user provides specific times (like \"7am workouts\"), create reminders immediately\n- When creating reminders, make SEPARATE reminders for each activity:\n  - \"Monday Cardio\" with days: [\"monday\"], time: \"07:00\"\n  - \"Tuesday Upper Body\" with days: [\"tuesday\"], time: \"07:00\"\n  - etc.\n- Default times if user says \"use default times\": 7:00 AM for workouts, 8:00 AM for meal planning",
+    
+    "topic_classifier": "Analyze user messages and classify them into fitness topics:\n- Workout: Exercise routines, form analysis, strength training, cardio\n- Nutrition: Meal logging, diet questions, calorie tracking, supplements\n- Goals: Setting targets, progress tracking, milestones\n- Progress: Weight changes, measurements, achievements\n- Recovery: Sleep, rest days, injury prevention\n- General: Greetings, motivation, general fitness chat\n\nReturn the most appropriate topic based on the message content.",
+    
+    "workout_parser": "Extract structured workout data from user messages. Look for:\n- Exercise names (push-ups, bench press, squats, etc.)\n- Sets and reps (e.g., '3 sets of 12', '5x5')\n- Weight used (kg, lbs, bodyweight)\n- Duration for cardio\n- Form cues or notes\n\nBe intelligent about context - if someone mentions 'pulled 315 for 5', that's likely deadlift for 5 reps at 315lbs.",
+    
+    "meal_analyzer": "Analyze meal descriptions and estimate nutritional content:\n- Break down ingredients when possible\n- Estimate portion sizes from descriptions\n- Provide calorie estimates with confidence scores\n- Include macro breakdowns (protein, carbs, fat)\n- Be conservative with estimates - better to underestimate than overestimate\n- Ask clarifying questions if descriptions are vague"
+  }
+}

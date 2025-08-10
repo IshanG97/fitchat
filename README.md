@@ -4,12 +4,15 @@ A real-time, personalized WhatsApp fitness coach that chats, tracks, and motivat
 
 ## Features
 
+- 🎬 **Video Form Analysis**: Upload workout videos to get AI-powered form and technique feedback
+- 🏋️ **Smart Workout Logging**: Automatically parse and track workouts with intelligent prompting
+- 🍽️ **Meal Tracking**: AI-powered calorie estimation and nutrition tracking from meal descriptions
+- 📈 **Body Weight Tracking**: Track weight changes over time with progress visualization
 - 🗣️ **Voice Interactions**: Send voice messages and receive audio coaching feedback
 - 💬 **Intelligent Conversations**: Context-aware fitness discussions with topic-based threading
-- 📊 **Progress Tracking**: Persistent conversation history and progress monitoring
+- 📊 **Progress Tracking**: Comprehensive health metrics and workout history
 - ⏰ **Smart Reminders**: Automated workout reminders, progress check-ins, and nutrition prompts
 - 🎯 **Goal Management**: Set and track fitness goals with personalized coaching
-- 🌤️ **Weather-Based Recommendations**: Exercise suggestions based on local weather conditions
 - 📱 **WhatsApp Integration**: Native WhatsApp Business API for seamless mobile experience
 
 ## Quick Start
@@ -18,34 +21,74 @@ A real-time, personalized WhatsApp fitness coach that chats, tracks, and motivat
 - Node.js 18+ and npm
 - Supabase account and project
 - WhatsApp Business API access
-- OpenAI API key (for Whisper transcription)
+- OpenAI API key (for Whisper transcription and GPT-4o Vision)
 - ElevenLabs API key (for text-to-speech)
+- **FFmpeg** (required for video form analysis)
 
 ### Setup
-1. **Clone and install dependencies**
+1. **Install FFmpeg (Required for Video Analysis)**
+   
+   **Windows:**
+   ```bash
+   # Using Chocolatey (recommended)
+   choco install ffmpeg
+   
+   # Or using Winget
+   winget install "FFmpeg (Essentials Build)"
+   ```
+   
+   **macOS:**
+   ```bash
+   brew install ffmpeg
+   ```
+   
+   **Ubuntu/Debian:**
+   ```bash
+   sudo apt update && sudo apt install ffmpeg
+   ```
+   
+   **Manual Installation:**
+   - Download from https://ffmpeg.org/download.html
+   - Add FFmpeg to your system PATH
+
+2. **Clone and install dependencies**
    ```bash
    git clone <repo-url>
    cd fitchat
    npm install
    ```
 
-2. **Configure environment variables**
+3. **Configure environment variables**
    ```bash
    cp .env.example .env.local
    ```
    Fill in all the required API keys and URLs in `.env.local`
 
-3. **Set up Supabase database**
-   Run the database setup script in your Supabase SQL editor:
+4. **Set up Supabase database**
+   Run the fresh database setup script:
    
-   Copy the contents of `scripts/setup-database.sql` and execute it in your Supabase project's SQL editor. This will create all necessary tables, indexes, and security policies.
+   ```bash
+   npm run setup-db
+   ```
+   
+   This will:
+   - Clear existing data from your database
+   - Generate a fresh SQL schema
+   - Provide instructions to run it in Supabase SQL editor
+   
+   Alternatively, you can run the script manually:
+   ```bash
+   node scripts/setup-fresh-database.js
+   ```
+   
+   Then copy the generated SQL and run it in your [Supabase SQL Editor](https://supabase.com/dashboard/project/your-project/sql/new).
 
-4. **Configure WhatsApp webhook**
+5. **Configure WhatsApp webhook**
    - Deploy the application or use ngrok for local development
    - Set webhook URL to: `https://your-domain.com/api/webhook`
    - Set verification token to match `WEBHOOK_VERIFICATION_TOKEN`
 
-5. **Set up git hooks (optional)**
+6. **Set up git hooks (optional)**
    ```bash
    git config core.hooksPath .git/hooks
    ```
@@ -66,7 +109,7 @@ A real-time, personalized WhatsApp fitness coach that chats, tracks, and motivat
    
    Make it executable: `chmod +x .git/hooks/pre-commit`
 
-6. **Start the development server**
+7. **Start the development server**
    ```bash
    npm run dev
    ```
@@ -92,25 +135,49 @@ A real-time, personalized WhatsApp fitness coach that chats, tracks, and motivat
 ### Core Components
 - **Database Layer**: Supabase for persistent storage with realtime subscriptions
 - **WhatsApp Integration**: Business API for message handling and media
-- **AI Processing**: OpenAI Whisper for transcription, ElevenLabs for TTS
+- **AI Processing**: 
+  - OpenAI Whisper for voice transcription
+  - GPT-5-mini for intelligent responses  
+  - GPT-4o Vision for video form analysis
+  - ElevenLabs for text-to-speech
+- **Video Processing**: FFmpeg for frame extraction from workout videos
 - **Sports Coach**: Specialized fitness coaching logic with form analysis
 - **Task Scheduler**: Node-cron based reminder system
 - **Realtime Service**: Automatic task scheduling on database changes
 
 ### Conversation Flow
-1. User sends message (text/voice) via WhatsApp
-2. System extracts message data and transcribes audio if needed
+1. User sends message (text/voice/video) via WhatsApp
+2. System extracts message data and processes content:
+   - **Text**: Direct processing with smart health logging detection
+   - **Audio**: Whisper transcription  
+   - **Video**: FFmpeg frame extraction → GPT-4o Vision analysis
 3. User is created/retrieved from database
-4. Message is logged to appropriate conversation thread
-5. AI generates contextual fitness coaching response
-6. Response is sent back via text or voice
-7. Tasks are created and scheduled based on conversation intent
+4. **Smart Health Logging**:
+   - **Workout Detection**: AI parses workout descriptions ("3 sets of 10 push-ups")
+   - **Meal Tracking**: AI estimates calories and macros from meal descriptions
+   - **Progressive Prompting**: Only asks for missing data (body weight, clarifications)
+5. Message is logged to appropriate conversation thread
+6. AI generates contextual fitness coaching response:
+   - **Regular messages**: GPT-5-mini with conversation context
+   - **Video analysis**: GPT-4o Vision + GPT-5-mini synthesis
+   - **Health logging**: Confirmations and progress insights
+7. Response is sent back via text or voice
+8. Tasks are created and scheduled based on conversation intent
+
+### Health Logging System
+- **Workout Parsing**: Automatically extracts sets, reps, weight, and exercise type
+- **Body Weight Tracking**: Tracks changes over time, only prompts when needed
+- **Meal Analysis**: AI estimates calories with confidence scoring
+- **Smart Prompting**: Minimal onboarding - collects data progressively as needed
 
 ## Development
 
 ```bash
 # Start development server
 npm run dev
+
+# Setup fresh database
+npm run setup-db
 
 # Run linting
 npm run lint
@@ -121,6 +188,16 @@ npm run build
 # Start production server
 npm start
 ```
+
+### Database Schema
+The health logging system includes these main tables:
+- `users` - User profiles with basic info
+- `user_metrics` - Body weight, health metrics over time
+- `workouts` - Workout sessions
+- `workout_exercises` - Individual exercises with sets/reps/weight
+- `meals` - Meal tracking with calories and macros
+- `conversations` - Chat threads by topic
+- `messages` - All WhatsApp interactions
 
 ## Deployment
 
@@ -151,6 +228,16 @@ npm start
 **Audio features not working**
 - Verify `OPENAI_API_KEY` and `ELEVENLABS_API_KEY` are set correctly
 - Check that temporary file directories (`/tmp`) are writable
+
+**Video form analysis not working**
+- **FFmpeg not found**: Install FFmpeg and ensure it's in your system PATH
+  ```bash
+  # Test FFmpeg installation
+  ffmpeg -version
+  ```
+- **Video processing fails**: Check console logs for detailed error messages
+- **Large video files**: Ensure adequate disk space in `/tmp` directory
+- **Unsupported formats**: Convert videos to MP4 format if needed
 
 **WhatsApp messages not receiving**
 - Verify webhook URL is accessible publicly (use ngrok for development)

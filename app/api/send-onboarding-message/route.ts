@@ -1,5 +1,6 @@
 // app/api/send-onboarding-message/route.ts
 import { NextResponse } from 'next/server';
+import prompts from '@/config/prompts.json';
 
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID!;
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN!;
@@ -39,14 +40,17 @@ export async function POST(req: Request) {
     'Content-Type': 'application/json',
   };
 
+  // Load template from prompts file
+  const template = prompts.whatsapp_templates.fitchat_welcome;
+
   const payload = {
     messaging_product: 'whatsapp',
     to: to_number,
     type: 'template',
     template: {
-      name: 'fitchat_welcome',
+      name: template.name,
       language: {
-        code: 'en',
+        code: template.language,
       },
     },
   };
