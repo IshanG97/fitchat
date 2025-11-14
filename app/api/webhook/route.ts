@@ -7,6 +7,7 @@ import {
   extract_message_data,
   download_whatsapp_audio,
   download_whatsapp_video,
+  download_whatsapp_image,
   transcribe_audio,
   extract_video_frames,
   send_text_message,
@@ -111,6 +112,10 @@ export async function POST(req: NextRequest) {
         // Don't treat this as video analysis since it failed
         isVideoAnalysis = false;
       }
+    } else if (message_data.image_id) {
+      console.log('🖼️ Processing image');
+      const image_path = await download_whatsapp_image(message_data.image_id);
+      user_text = await FitChatAI.analyzeImage(image_path);
     } else if (message_data.text) {
       user_text = message_data.text;
       
@@ -137,7 +142,8 @@ export async function POST(req: NextRequest) {
 
       // Determine message type for logging
       const messageType = message_data.video_id ? 'video' : 
-                         message_data.audio_id ? 'audio' : 'text';
+                         message_data.audio_id ? 'audio' : 
+                         message_data.image_id ? 'image' : 'text';
       const logContent = isVideoAnalysis ? 
         `[VIDEO ANALYSIS] ${user_text}` : user_text;
 

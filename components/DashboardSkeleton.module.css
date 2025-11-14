@@ -1,0 +1,78 @@
+.pageContainer {
+  padding: var(--spacing-8) 0;
+}
+
+.welcomeHeader {
+  margin-bottom: var(--spacing-8);
+}
+
+.gridContainer {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: var(--spacing-6);
+}
+
+@media (min-width: 1024px) {
+  .gridContainer {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas:
+      "metrics metrics achievements"
+      "progress progress nutrition"
+      "interactions interactions nutrition";
+  }
+
+  .metrics { grid-area: metrics; }
+  .progress { grid-area: progress; }
+  .nutrition { grid-area: nutrition; }
+  .interactions { grid-area: interactions; }
+  .achievements { grid-area: achievements; }
+}
+
+@media (min-width: 1280px) {
+  .gridContainer {
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-areas:
+      "metrics metrics achievements interactions"
+      "progress progress nutrition interactions";
+  }
+}
+
+.gridItem {
+  background-color: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow);
+}
+
+.metricCards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+@media (min-width: 640px) {
+  .metricCards {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.metricCard {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.metricInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  flex: 1;
+}
+
+.achievementList, .interactionList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}

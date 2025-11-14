@@ -1,0 +1,21 @@
+.container {
+  color: var(--foreground);
+}
+
+.title {
+  font-family: var(--font-family-heading);
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  color: var(--muted-foreground);
+  margin-top: var(--spacing-2);
+}
+
+.goal {
+  font-weight: 600;
+  color: var(--primary);
+}

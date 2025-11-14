@@ -19,6 +19,7 @@ export interface MessageData {
   text?: string;
   audio_id?: string;
   video_id?: string;
+  image_id?: string;
   message_id?: string;
   timestamp?: string;
   type?: string;
@@ -44,6 +45,7 @@ export function extract_message_data(body: any): MessageData | null {
       text: messageType === 'text' ? message.text?.body : undefined,
       audio_id: messageType === 'audio' ? message.audio?.id : undefined,
       video_id: messageType === 'video' ? message.video?.id : undefined,
+      image_id: messageType === 'image' ? message.image?.id : undefined,
       raw: message,
     };
   } catch (error) {
@@ -51,6 +53,49 @@ export function extract_message_data(body: any): MessageData | null {
     return null;
   }
 }
+
+export async function download_whatsapp_image(imageId: string): Promise<string> {
+  try {
+    // Get media URL
+    const mediaResponse = await axios.get(
+      `https://graph.facebook.com/v22.0/${imageId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+        },
+      }
+    );
+
+    const mediaUrl = mediaResponse.data.url;
+
+    // Download the image file
+    const imageResponse = await axios.get(mediaUrl, {
+      headers: {
+        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+      },
+      responseType: 'stream',
+    });
+
+    // Save to temporary file
+    const tempDir = '/tmp';
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const filePath = `${tempDir}/image_${Date.now()}.jpg`;
+    const writer = fs.createWriteStream(filePath);
+    imageResponse.data.pipe(writer);
+
+    return new Promise((resolve, reject) => {
+      writer.on('finish', () => resolve(filePath));
+      writer.on('error', reject);
+    });
+  } catch (error) {
+    console.error('Error downloading WhatsApp image:', error);
+    throw error;
+  }
+}
+
 
 export async function download_whatsapp_audio(audioId: string): Promise<string> {
   try {

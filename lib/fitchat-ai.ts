@@ -518,6 +518,46 @@ export class FitChatAI {
     }
   }
 
+  // Image analysis method
+  static async analyzeImage(imagePath: string): Promise<string> {
+    try {
+      const fs = require('fs');
+      const imageBuffer = fs.readFileSync(imagePath);
+      const base64Image = imageBuffer.toString('base64');
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Analyze this image. If it's a food/meal image, provide a detailed description of the food items you see, estimated portions, and any relevant nutritional context. If it's NOT food-related (e.g., workout equipment, gym photos, etc.), simply describe what you see briefly and acknowledge it's not a meal. Be natural and conversational in your response."
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`,
+                  detail: "high"
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.7
+      });
+
+      return completion.choices[0]?.message?.content ||
+        "I can see your image, but I'm having trouble analyzing it right now.";
+
+    } catch (error) {
+      console.error('❌ Image analysis failed:', error);
+      throw error;
+    }
+  }
+
   // Video analysis method (consolidated from separate function)
   static async analyzeWorkoutVideo(framePaths: string[]): Promise<string> {
     try {

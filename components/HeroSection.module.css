@@ -1,0 +1,130 @@
+.hero {
+  padding-top: var(--spacing-16);
+  padding-bottom: var(--spacing-12);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 10%, transparent) 0%, transparent 60%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.contentWrapper {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-12);
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .contentWrapper {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-16);
+  }
+}
+
+.textContainer {
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .textContainer {
+    text-align: left;
+  }
+}
+
+.headline {
+  font-family: var(--font-family-heading);
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: var(--foreground);
+}
+
+@media (min-width: 768px) {
+  .headline {
+    font-size: 3.5rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .headline {
+    font-size: 4.5rem;
+  }
+}
+
+.highlight {
+  color: var(--primary);
+}
+
+.tagline {
+  margin-top: var(--spacing-6);
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+  max-width: 550px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 1024px) {
+  .tagline {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+.ctaContainer {
+  margin-top: var(--spacing-8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+@media (min-width: 768px) {
+  .ctaContainer {
+    flex-direction: row;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ctaContainer {
+    justify-content: flex-start;
+  }
+}
+
+.ctaButton {
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+}
+
+.secondaryLink {
+  font-weight: 500;
+  color: var(--muted-foreground);
+  text-decoration: none;
+  transition: color var(--animation-duration-fast) ease;
+}
+
+.secondaryLink:hover {
+  color: var(--foreground);
+}
+
+.mockupContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1500px;
+}

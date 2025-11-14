@@ -1,0 +1,94 @@
+.mockupWrapper {
+  transform: rotateY(-15deg) rotateX(5deg);
+  transform-style: preserve-3d;
+  transition: transform 0.4s ease;
+}
+
+.mockupWrapper:hover {
+  transform: rotateY(-5deg) rotateX(2deg) scale(1.02);
+}
+
+.chatContainer {
+  width: 320px;
+  height: 580px;
+  background-color: #075E54; /* WhatsApp dark green */
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 4px solid var(--surface);
+}
+
+.header {
+  background-color: #128C7E; /* WhatsApp green */
+  padding: var(--spacing-3) var(--spacing-4);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  color: white;
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 2px solid white;
+}
+
+.headerInfo {
+  line-height: 1.2;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.status {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.messageArea {
+  flex-grow: 1;
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARMAAAESCAMAAAASvP9AAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAzUExURQAAAO3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e08r+AAAAARdFJOU///////////////////////////////////////////AM/n2gAAAAlwSFlzAAAXEQAAFxEByibzPwAAAD9JREFUeNrtwQENAAAAwiD7p7bHBwwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADgBw4UAQAB2ABjRAAAAABJRU5ErkJggg==');
+  background-color: #E5DDD5; /* WhatsApp chat background */
+  overflow-y: auto;
+}
+
+.message {
+  max-width: 80%;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius);
+  line-height: 1.4;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow);
+}
+
+.coach {
+  background-color: white;
+  color: var(--foreground);
+  align-self: flex-start;
+  border-top-left-radius: 0;
+}
+
+.user {
+  background-color: #DCF8C6; /* WhatsApp user message green */
+  color: var(--foreground);
+  align-self: flex-end;
+  border-top-right-radius: 0;
+}
+
+.inputArea {
+  background-color: var(--surface);
+  padding: var(--spacing-3) var(--spacing-4);
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  margin: var(--spacing-2);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+}
